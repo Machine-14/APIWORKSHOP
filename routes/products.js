@@ -42,12 +42,12 @@ router.get('/products/:id', tokenMiddleware, async (req, res) => {
 
 router.post('/products', async (req, res) => {
   try {
-    const { name, price, stock } = req.body;
+    const { name, price, stock, image } = req.body; // เพิ่ม image
     if (!name || !price || !stock) {
       return res.status(400).json({ error: 'จำเป็นต้องกรอก Name, price, และ stock' });
     }
 
-    const newProduct = new productSchema({ name, price, stock });
+    const newProduct = new productSchema({ name, price, stock, image }); // เพิ่ม image
     await newProduct.save();
     res.status(201).json(newProduct);
   } catch (error) {
@@ -55,22 +55,21 @@ router.post('/products', async (req, res) => {
     res.status(500).json({ error: 'Internal server error.' });
   }
 });
-
 // อัพเดท product เฉพาะ :id ที่ต้องการ
-
 router.put('/products/:id', tokenMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, stock } = req.body;
+    const { name, price, stock, image } = req.body; // เพิ่ม image
 
-    if (!name && !price && !stock) {
-      return res.status(400).json({ error: 'ต้องแก้ไขอย่างน้อย 1 อย่าง (name, price, stock) ' });
+    if (!name && !price && !stock && !image) {
+      return res.status(400).json({ error: 'ต้องแก้ไขอย่างน้อย 1 อย่าง (name, price, stock, image)' });
     }
 
     const updateData = {};
     if (name) updateData.name = name;
     if (price) updateData.price = price;
     if (stock) updateData.stock = stock;
+    if (image !== undefined) updateData.image = image; // เพิ่ม image
 
     const updatedProduct = await productSchema.findByIdAndUpdate(id, updateData, { new: true });
     
@@ -84,7 +83,6 @@ router.put('/products/:id', tokenMiddleware, async (req, res) => {
     res.status(500).json({ error: 'Internal server error.' });
   }
 });
-
 // ลบรายการ product เฉพาะ :id ที่ต้องการ
 
 router.delete('/products/:id', tokenMiddleware, async (req, res) => {
