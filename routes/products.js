@@ -158,18 +158,30 @@ router.post('/products/:id/orders', tokenMiddleware, async (req, res) => {
 router.get('/products/:id/orders', tokenMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // ตรวจสอบว่า product มีอยู่จริง
+    const product = await productSchema.findById(id);
+    if (!product) {
+      return res.status(404).json({ error: 'ไม่เจอ Product' });
+    }
+    
+    // ดึง orders ของสินค้านี้
     const orders = await orderSchema.find({ product: id })
-      .populate('product', 'name') // ดึงเฉพาะชื่อสินค้า
-      .select('product order'); // ดึงเฉพาะฟิลด์ product และ order
-
-    const result = orders.map(order => ({
-      productName: order.product?.name,
-      order: order.order
+      .populate('product', 'name price stock')
+      .sort({ createdAt: -1 });
+    
+    // แปลงข้อมูลให้ตรงกับที่ Vue.js คาดหวัง
+    const formattedOrders = orders.map(order => ({
+      _id: order._id,
+      productName: order.product?.name || 'ไม่ระบุชื่อสินค้า',
+      order: order.order,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt
     }));
-
-    res.status(200).json(result);
+    
+    res.status(200).json(formattedOrders);
   } catch (error) {
-    console.error("Error fetching orders for product:", error);
+    console.error("Error fetching product orders:", error);
     res.status(500).json({ error: 'Internal server error.' });
   }
 });
@@ -177,21 +189,26 @@ router.get('/products/:id/orders', tokenMiddleware, async (req, res) => {
 // แสดง order ทุกรายการ
 router.get('/orders', tokenMiddleware, async (req, res) => {
   try {
-    const orders = await orderSchema.find()
-      .populate('product', 'name') // ดึงชื่อสินค้า
-      .select('product order');     // ดึงเฉพาะฟิลด์ product และ order
-
-    const result = orders.map(order => ({
-      productName: order.product?.name,
-      orderAmout: order.order
+    const orders = await orderSchema.find({})
+      .populate('product', 'name price stock') // populate ข้อมูลสินค้า
+      .sort({ createdAt: -1 }); // เรียงจากใหม่ไปเก่า
+    
+    // แปลงข้อมูลให้ตรงกับที่ Vue.js คาดหวัง
+    const formattedOrders = orders.map(order => ({
+      _id: order._id,
+      productName: order.product?.name || 'ไม่ระบุชื่อสินค้า',
+      order: order.order,
+      orderAmout: order.order, // สำหรับความเข้ากันได้
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt
     }));
-
-    res.status(200).json(result);
+    
+    console.log('Sending orders:', formattedOrders.length);
+    res.status(200).json(formattedOrders);
   } catch (error) {
-    console.error("ล้มเหลวในการค้นหา orders ทั้งหมด:", error);
+    console.error("Error fetching orders:", error);
     res.status(500).json({ error: 'Internal server error.' });
   }
-
 });
 
 module.exports = router;
