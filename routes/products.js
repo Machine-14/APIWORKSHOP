@@ -75,7 +75,7 @@ router.put('/products/:id', tokenMiddleware, async (req, res) => {
     const updatedProduct = await productSchema.findByIdAndUpdate(id, updateData, { new: true });
     
     if (!updatedProduct) {
-      return res.status(404).json({ error: 'ไม่เจอ Produc' });
+      return res.status(404).json({ error: 'ไม่เจอ Product' });
     }
 
     res.status(200).json(updatedProduct);
